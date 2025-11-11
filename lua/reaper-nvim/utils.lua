@@ -12,7 +12,7 @@ function M.open_url(url)
 end
 
 function M.fzf(sources, sinkfunc, custom_options)
-	local cmd = fuzzy_func;
+	local cmd = fuzzy_func
 	local fzf_run = vim.fn[cmd .. "#run"]
 	local fzf_wrap = vim.fn[cmd .. "#wrap"]
 
@@ -22,40 +22,55 @@ function M.fzf(sources, sinkfunc, custom_options)
 		-- don't set `sink` or `sink*` here
 	})
 
-	wrapped["sink*"] = nil   -- this line is required if you want to use `sink` only
+	wrapped["sink*"] = nil -- this line is required if you want to use `sink` only
 	wrapped.sink = sinkfunc
 	fzf_run(wrapped)
 end
 
 -- Execute reaper action via OSC
-function M.send_action_osc(action_num)
+function M.send_action_osc(action_num, name)
+	if action_num == nil then
+		return
+	end
 	vim.g.reaper_last_action = action_num
 
 	local argument = "/action"
-	M.send_message(argument, action_num);
+	print("Rea Action = " .. tostring(action_num) .. " Name = " .. (name or "<nil>"))
+	M.send_message(argument, action_num)
 end
 
 function M.silent_shell(cmd)
 	vim.cmd("silent exe '! " .. cmd .. " &'")
 end
 
-
-local osc = require'osc'.new{
-  transport = 'udp',
-  sendAddr = target_ip,
-  sendPort = target_port,
-}
+local osc = require("osc").new({
+	transport = "udp",
+	sendAddr = target_ip,
+	sendPort = target_port,
+})
 
 function M.send_message(address, command_num)
-	local message = osc.new_message{
-		address = address,
-		types = 'i',
-		command_num
-	}
+	if command_num == nil then
+		return
+	end
 
-	local ok, err = osc:send(message)
-	if not ok then
-	print(err)
+	if
+		not pcall(function()
+			local message = osc.new_message({ address = address, types = "i", command_num })
+			local ok, err = osc:send(message)
+			if not ok then
+				print(err)
+			end
+		end)
+	then
+		print(
+			"Address = "
+				.. address
+				.. ", Command = "
+				.. (tostring(command_num) or "<nil>")
+				.. ", type = "
+				.. type(command_num)
+		)
 	end
 end
 
